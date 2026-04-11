@@ -173,34 +173,30 @@
     });
 
     async function startMatching(e) {
-        e.preventDefault();
-        
-        const companyData = {
-            category: document.querySelector('input[name="category"]:checked').value,
-            target_price: parseInt(document.getElementById('targetPrice').value)
-        };
-        
-        document.getElementById('onboardingForm').classList.add('hidden');
-        document.getElementById('loadingScreen').classList.remove('hidden');
-        
-        try {
-          
-            const { data: influencers, error } = await dbClient
-                .from('influencers')
-                .select('*');
-            
-            if (error) throw error;
-            
-            const results = calculateMatching(companyData, influencers);
-            displayResults(results);
-            
-        } catch (err) {
-            console.error('Error:', err);
-            alert('데이터를 불러오는 중 오류: ' + err.message);
-        }
-        
-        document.getElementById('loadingScreen').classList.add('hidden');
-        document.getElementById('resultArea').classList.remove('hidden');
+    e.preventDefault();
+    
+    const companyData = {
+        category: document.querySelector('input[name="category"]:checked').value,
+        target_price: parseInt(document.getElementById('targetPrice').value)
+    };
+    
+    document.getElementById('onboardingForm').classList.add('hidden');
+    document.getElementById('loadingScreen').classList.remove('hidden');
+    
+    // DB 대신 하드코딩된 5명 사용 (Supabase에 입력한 실제 데이터)
+    const influencers = [
+        {nickname: 'XiaoMei Beauty', category: 'beauty', followers: 1800000, avg_price: 45000, days_since_live: 7, korean_count: 1, target_match: 0.75, response_rate: 0.8, monthly_sales: 280000, growth: 0.2},
+        {nickname: 'Beauty Coco', category: 'beauty', followers: 3200000, avg_price: 48000, days_since_live: 2, korean_count: 5, target_match: 0.85, response_rate: 0.9, monthly_sales: 300000, growth: 0.25},
+        {nickname: 'Fashion Lily', category: 'fashion', followers: 950000, avg_price: 55000, days_since_live: 3, korean_count: 8, target_match: 0.9, response_rate: 0.85, monthly_sales: 450000, growth: 0.15},
+        {nickname: 'Foodie Sister', category: 'food', followers: 2200000, avg_price: 30000, days_since_live: 1, korean_count: 2, target_match: 0.4, response_rate: 0.95, monthly_sales: 500000, growth: 0.3},
+        {nickname: 'Trendy Mike', category: 'fashion', followers: 1200000, avg_price: 60000, days_since_live: 5, korean_count: 0, target_match: 0.6, response_rate: 0.7, monthly_sales: 150000, growth: 0.1}
+    ];
+    
+    const results = calculateMatching(companyData, influencers);
+    displayResults(results);
+    
+    document.getElementById('loadingScreen').classList.add('hidden');
+    document.getElementById('resultArea').classList.remove('hidden');
     }
 
     function calculateMatching(company, influencers) {
