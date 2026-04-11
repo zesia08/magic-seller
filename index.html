@@ -173,39 +173,68 @@
     });
 
     async function startMatching(e) {
-    e.preventDefault();
+  // 1. 폼 제출 막기 (페이지 새로고침 방지)
+  e.preventDefault();
+  
+  // 2. 사용자가 입력한 값 가져오기
+  const category = document.querySelector('input[name="category"]:checked')?.value;
+  const minFollowers = parseInt(document.getElementById('minFollowers')?.value) || 0;
+  const maxFollowers = parseInt(document.getElementById('maxFollowers')?.value) || 999999999;
+  
+  // 입력값 체크
+  if (!category) {
+    alert('카테고리를 선택해주세요!');
+    return;
+  }
+  
+  // 3. 로딩 화면 보여주기
+  document.getElementById('onboardingForm')?.classList.add('hidden');
+  document.getElementById('loadingScreen')?.classList.remove('hidden');
+  
+  try {
+    // 4. Supabase에서 인플루언서 데이터 가져오기
+    const { data: influencers, error } = await supabase
+      .from('influencers')
+      .select('*')
+      .eq('category', category)
+      .gte('followers', minFollowers)
+      .lte('followers', maxFollowers);
     
-    const companyData = {
-        category: document.querySelector('input[name="category"]:checked').value,
-        target_price: parseInt(document.getElementById('targetPrice').value)
-    };
+    // 에러 체크
+    if (error) throw error;
     
-    document.getElementById('onboardingForm').classList.add('hidden');
-    document.getElementById('loadingScreen').classList.remove('hidden');
-    
-    try {
-        // 실제 DB에서 데이터 가져오기
-        const { data: influencers, error } = await dbClient
-            .from('influencers')
-            .select('*');
-        
-        if (error) throw error;
-        
-        if (!influencers || influencers.length === 0) {
-            alert('인플루언서 데이터가 없습니다.');
-            return;
-        }
-        
-        const results = calculateMatching(companyData, influencers);
-        displayResults(results);
-        
-    } catch (err) {
-        console.error('Error:', err);
-        alert('데이터를 불러오는 중 오류: ' + err.message);
+    // 데이터 없을 때
+    if (!influencers || influencers.length === 0) {
+      alert('조건에 맞는 인플루언서가 없습니다.');
+      document.getElementById('loadingScreen')?.classList.add('hidden');
+      document.getElementById('onboardingForm')?.classList.remove('hidden');
+      return;
     }
     
-    document.getElementById('loadingScreen').classList.add('hidden');
-    document.getElementById('resultArea').classList.remove('hidden');
+    // 5. 매칭 점수 계산하기
+    const results = influencers.map(inf => {
+      // 팔로워 수 차이로 점수 계산 (작을수록 좋음)
+      const followerDiff = Math.abs(inf.followers - (minFollowers + maxFollowers) / 2);
+      const score = Math.max(0, 100 - Math.floor(followerDiff / 1000));
+      
+      return {
+        ...inf,
+        matchScore: score
+      };
+    });
+    
+    // 점수 높은 순으로 정렬
+    results.sort((a, b) => b.matchScore - a.matchScore);
+    
+    // 6. 결과 화면에 보여주기
+    displayResults(results);
+    
+  } catch (err) {
+    console.error('에러:', err);
+    alert('데이터를 불러오는 중 문제가 생겼어요: ' + err.message);
+    document.getElementById('loadingScreen')?.classList.add('hidden');
+    document.getElementById('onboardingForm')?.classList.remove('hidden');
+  }
 }
 
     function calculateMatching(company, influencers) {
