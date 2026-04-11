@@ -164,43 +164,39 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoaHlnanRybW9jYnBlZGpjZmF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MjgwMzUsImV4cCI6MjA5MTQwNDAzNX0.c1b6C3hgWC4CXqDLfboD_6xYKzBLQ-YM44wzol1RMPI'; 
     const TOSS_CLIENT_KEY = 'test_ck_E92LAa5PVbPO1p91MPgR87YmpXyJ';
     
-    let supabase, tossPayments;
+    let dbClient, tossPayments;
     
     document.addEventListener('DOMContentLoaded', () => {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // window.supabase 사용 (CDN에서 제공하는 전역 객체)
+        dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         tossPayments = TossPayments(TOSS_CLIENT_KEY);
     });
 
     async function startMatching(e) {
         e.preventDefault();
         
-        // 입력값 가져오기
         const companyData = {
             category: document.querySelector('input[name="category"]:checked').value,
             target_price: parseInt(document.getElementById('targetPrice').value)
         };
         
-        // UI 전환
         document.getElementById('onboardingForm').classList.add('hidden');
         document.getElementById('loadingScreen').classList.remove('hidden');
         
         try {
-            // DB에서 인플루언서 데이터 가져오기
-            const { data: influencers, error } = await supabase
+          
+            const { data: influencers, error } = await dbClient
                 .from('influencers')
                 .select('*');
             
             if (error) throw error;
             
-            // AI 매칭 계산
             const results = calculateMatching(companyData, influencers);
-            
-            // 결과 표시
             displayResults(results);
             
         } catch (err) {
             console.error('Error:', err);
-            alert('데이터를 불러오는 중 오류가 발생했습니다.');
+            alert('데이터를 불러오는 중 오류: ' + err.message);
         }
         
         document.getElementById('loadingScreen').classList.add('hidden');
